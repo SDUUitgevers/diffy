@@ -85,21 +85,41 @@ class HttpLifter(excludeHttpHeadersComparison: Boolean) {
         /** When Content-Type is set as text/html, lift as Html **/
         case (Some(mediaType), _)
           if mediaType.is(MediaType.HTML_UTF_8) || mediaType.toString == "text/html" => {
-            val htmlContentTry = Try {
-              HtmlLifter.lift(HtmlLifter.decode(r.getContent.toString(Charsets.Utf8)))
-            }
-
-            Future.const(htmlContentTry map { htmlContent =>
-              val responseMap = Map(
-                r.getStatus.getCode.toString -> (Map(
-                  "content" -> htmlContent,
-                  "chunked" -> r.isChunked
-                ) ++ headersMap(r))
-              )
-
-              Message(controllerEndpoint, FieldMap(responseMap))
-            })
+          val htmlContentTry = Try {
+            HtmlLifter.lift(HtmlLifter.decode(r.getContent.toString(Charsets.Utf8)))
           }
+
+          Future.const(htmlContentTry map { htmlContent =>
+            val responseMap = Map(
+              r.getStatus.getCode.toString -> (Map(
+                "content" -> htmlContent,
+                "chunked" -> r.isChunked
+              ) ++ headersMap(r))
+            )
+
+            Message(controllerEndpoint, FieldMap(responseMap))
+          })
+        }
+
+        /** When Content-Type is set as application/xml, lift as Xml **/
+        case (Some(mediaType), _)
+          if mediaType.is(MediaType.XML_UTF_8) || mediaType.toString.contains("application/xml") => {
+          val xmlContentTry = Try {
+            XmlLifter.lift(XmlLifter.decode(r.getContent.toString(Charsets.Utf8)))
+          }
+
+          Future.const(xmlContentTry map { xmlContent =>
+            val responseMap = Map(
+              r.getStatus.getCode.toString -> (Map(
+                "content" -> xmlContent,
+                "chunked" -> r.isChunked
+              ) ++ headersMap(r))
+            )
+
+            Message(controllerEndpoint, FieldMap(responseMap))
+          })
+        }
+
 
         /** When content type is not set, only compare headers **/
         case (None, _) => {
