@@ -10,9 +10,10 @@ import scala.collection.JavaConversions._
 object XmlLifter {
   def lift(node: Element): FieldMap[Any] = node match {
     case doc: Document =>
+      val root = doc.select(":root").get(0)
       FieldMap(
         Map(
-          "root" -> lift(doc.select(":root").get(0))
+          root.tagName -> lift(root)
         )
       )
     case doc: Element =>
@@ -28,7 +29,7 @@ object XmlLifter {
           "tag"         -> doc.tagName,
           "text"        -> doc.ownText,
           "attributes"  -> attributes,
-          "children"    -> children.map(element => lift(element))
+          doc.tagName   -> children.map(element => lift(element))
         )
       )
   }
