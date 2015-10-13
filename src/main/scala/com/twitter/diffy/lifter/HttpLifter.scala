@@ -125,7 +125,7 @@ class HttpLifter(excludeHttpHeadersComparison: Boolean) {
               r.getStatus.getCode.toString -> (Map(
                 "content" -> xmlContent,
                 "chunked" -> r.isChunked
-              ) ++ headersMap(r))
+              ))
             )
 
             Message(controllerEndpoint, FieldMap(responseMap))
