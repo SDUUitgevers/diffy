@@ -2,13 +2,13 @@ package com.twitter.diffy.proxy
 
 import java.net.SocketAddress
 
-import com.twitter.diffy.analysis.{DifferenceAnalyzer, JoinedDifferences, InMemoryDifferenceCollector}
+import com.twitter.diffy.analysis.{DifferenceAnalyzer, InMemoryDifferenceCollector, JoinedDifferences}
 import com.twitter.diffy.lifter.{HttpLifter, Message}
 import com.twitter.diffy.proxy.DifferenceProxy.NoResponseException
-import com.twitter.finagle.{Service, Http, Filter}
-import com.twitter.finagle.http.{Status, Response, Method, Request}
-import com.twitter.util.{Try, Future}
-import org.jboss.netty.handler.codec.http.{HttpResponse, HttpRequest}
+import com.twitter.finagle.{Filter, Http, Service}
+import com.twitter.finagle.http.{Method, Request, Response, Status}
+import com.twitter.util.{Future, StorageUnit, Try}
+import org.jboss.netty.handler.codec.http.{HttpRequest, HttpResponse}
 
 object HttpDifferenceProxy {
   val okResponse = Future.value(Response(Status.Ok))
@@ -35,7 +35,7 @@ trait HttpDifferenceProxy extends DifferenceProxy {
   override type Srv = HttpService
 
   override def serviceFactory(serverset: String, label: String) =
-    HttpService(Http.newClient(serverset, label).toService)
+    HttpService(Http.client.withMaxResponseSize(StorageUnit.parse("50.megabytes")).newClient(serverset, label).toService)
 
   override lazy val server =
     Http.serve(
