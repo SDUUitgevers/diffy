@@ -12,6 +12,7 @@ lazy val compilerOptions = Seq(
   "-feature",
   "-language:existentials",
   "-language:higherKinds",
+  "-language:postfixOps",
   "-unchecked",
   "-Ywarn-dead-code",
   "-Ywarn-numeric-widen",
@@ -55,6 +56,7 @@ lazy val baseSettings = Seq(
     "com.twitter" %% "scrooge-generator" % "4.0.0",
     "javax.mail" % "mail" % "1.4.7",
     "org.jsoup" % "jsoup" % "1.7.2",
+    "org.slf4j" % "slf4j-log4j12" % "1.7.7",
     "org.scala-lang" % "scala-compiler" % scalaVersion.value
   ) ++ finatraDependencies ++ testDependencies.map(_ % "test"),
   assemblyMergeStrategy in assembly := {
