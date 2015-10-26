@@ -67,7 +67,7 @@ lazy val baseSettings = Seq(
 )
 
 lazy val docSettings = site.settings ++ ghpages.settings ++ site.includeScaladoc("docs") :+ (
-  git.remoteRepo := "git@github.com:twitter/diffy.git"
+  git.remoteRepo := "git@github.com:sdu-cwc-extra/diffy.git"
 )
 
 lazy val diffy = project.in(file("."))
@@ -83,24 +83,22 @@ lazy val diffy = project.in(file("."))
 lazy val publishSettings = Seq(
   releaseCrossBuild := true,
   releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  homepage := Some(url("https://github.com/twitter/diffy")),
+  homepage := Some(url("https://github.com/sdu-cwc-extra/diffy")),
   licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
   publishMavenStyle := true,
   publishArtifact in Test := false,
   pomIncludeRepository := { _ => false },
   publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
+    val artifactory = "http://srv1075bh.sdu.nl:8081/artifactory/"
+    if (version.value.trim.endsWith("SNAPSHOT"))
+      Some("snapshots" at artifactory + "cwc-snapshots")
     else
-      Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+      Some("releases" at artifactory + "cwc-releases")
   },
-  autoAPIMappings := true,
-  apiURL := Some(url("https://twitter.github.io/diffy/docs/")),
   scmInfo := Some(
     ScmInfo(
-      url("https://github.com/twitter/diffy"),
-      "scm:git:git@github.com:twitter/diffy.git"
+      url("https://github.com/sdu-cwc-extra/diffy"),
+      "scm:git@github.com:sdu-cwc-extra/diffy.git"
     )
   ),
   pomExtra := (
@@ -109,6 +107,11 @@ lazy val publishSettings = Seq(
         <id>puneetkhanduri</id>
         <name>Puneet Khanduri</name>
         <url>https://twitter.com/pzdk</url>
+      </developer>
+      <developer>
+        <id>sdu-cwc-extra</id>
+        <name>SDU CWC Extra Team</name>
+        <url>https://github.com/sdu-cwc-extra</url>
       </developer>
     </developers>
   )
@@ -130,15 +133,3 @@ lazy val sharedReleaseProcess = Seq(
     pushChanges
   )
 )
-
-credentials ++= (
-  for {
-    username <- Option(System.getenv().get("SONATYPE_USERNAME"))
-    password <- Option(System.getenv().get("SONATYPE_PASSWORD"))
-  } yield Credentials(
-    "Sonatype Nexus Repository Manager",
-    "oss.sonatype.org",
-    username,
-    password
-  )
-).toSeq
