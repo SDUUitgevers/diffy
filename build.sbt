@@ -1,10 +1,26 @@
-import ReleaseTransformations._
+enablePlugins(JavaServerAppPackaging)
 
-lazy val buildSettings = Seq(
-  organization := "com.twitter",
-  scalaVersion := "2.11.7",
-  crossScalaVersions := Seq("2.10.5", "2.11.7")
-)
+organization := "com.twitter"
+scalaVersion := "2.11.7"
+crossScalaVersions := Seq("2.10.5", "2.11.7")
+
+// Debian
+name := "diffy"
+maintainer := "Sdu CWC Extra Team <sdu-cwc-extra@sdu.nl>"
+packageSummary := "Diffy Regression Test Tool"
+packageDescription := "Diffy Regression Test Tool"
+
+homepage := Some(url("https://github.com/sdu-cwc-extra/diffy"))
+licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+
+git.remoteRepo := "git@github.com:sdu-cwc-extra/diffy.git"
+
+mainClass in Compile := Some("com.twitter.diffy.Main")
+
+mappings in Universal <+= (packageBin in Compile, sourceDirectory ) map { (_, src) =>
+  val conf = src / "main" / "resources" / "log4j.xml"
+  conf -> "conf/log4j.xml"
+}
 
 lazy val compilerOptions = Seq(
   "-deprecation",
@@ -41,95 +57,36 @@ lazy val finatraDependencies = Seq(
   "com.twitter.inject" %% "inject-server" % finatraVersion % "test" classifier "tests"
 )
 
-lazy val baseSettings = Seq(
-  resolvers += "Twitter's Repository" at "https://maven.twttr.com/",
-  scalacOptions ++= compilerOptions ++ (
-    CrossVersion.partialVersion(scalaVersion.value) match {
-      case Some((2, 11)) => Seq("-Ywarn-unused-import")
-      case _ => Nil
-    }
-  ),
-  scalacOptions in (Compile, console) := compilerOptions,
-  libraryDependencies ++= Seq(
-    "com.twitter" %% "finagle-http" % "6.28.0",
-    "com.twitter" %% "finagle-thriftmux" % "6.28.0",
-    "com.twitter" %% "scrooge-generator" % "4.0.0",
-    "javax.mail" % "mail" % "1.4.7",
-    "org.jsoup" % "jsoup" % "1.7.2",
-    "org.slf4j" % "slf4j-log4j12" % "1.7.7",
-    "org.scala-lang" % "scala-compiler" % scalaVersion.value
-  ) ++ finatraDependencies ++ testDependencies.map(_ % "test"),
-  assemblyMergeStrategy in assembly := {
-    case "BUILD" => MergeStrategy.discard
-    case PathList("scala", "tools", _*) => MergeStrategy.last
-    case other => MergeStrategy.defaultMergeStrategy(other)
+resolvers += "Twitter's Repository" at "https://maven.twttr.com/"
+scalacOptions ++= compilerOptions ++ (
+  CrossVersion.partialVersion(scalaVersion.value) match {
+    case Some((2, 11)) => Seq("-Ywarn-unused-import")
+    case _ => Nil
   }
 )
+scalacOptions in (Compile, console) := compilerOptions
+libraryDependencies ++= Seq(
+  "com.twitter" %% "finagle-http" % "6.28.0",
+  "com.twitter" %% "finagle-thriftmux" % "6.28.0",
+  "com.twitter" %% "scrooge-generator" % "4.0.0",
+  "javax.mail" % "mail" % "1.4.7",
+  "org.jsoup" % "jsoup" % "1.7.2",
+  "org.slf4j" % "slf4j-log4j12" % "1.7.7",
+  "org.scala-lang" % "scala-compiler" % scalaVersion.value
+) ++ finatraDependencies ++ testDependencies.map(_ % "test")
+assemblyMergeStrategy in assembly := {
+  case "BUILD" => MergeStrategy.discard
+  case PathList("scala", "tools", _*) => MergeStrategy.last
+  case other => MergeStrategy.defaultMergeStrategy(other)
+}
 
-lazy val docSettings = site.settings ++ ghpages.settings ++ site.includeScaladoc("docs") :+ (
-  git.remoteRepo := "git@github.com:sdu-cwc-extra/diffy.git"
-)
+excludeFilter in unmanagedResources := HiddenFileFilter || "BUILD"
+unmanagedResourceDirectories in Compile += baseDirectory.value / "src" / "main" / "webapp"
 
-lazy val diffy = project.in(file("."))
-  .settings(
-    moduleName := "diffy",
-    assemblyJarName := "diffy-server.jar",
-    excludeFilter in unmanagedResources := HiddenFileFilter || "BUILD",
-    unmanagedResourceDirectories in Compile +=
-      baseDirectory.value / "src" / "main" / "webapp"
-  )
-  .settings(buildSettings ++ baseSettings ++ docSettings ++ publishSettings)
-
-lazy val publishSettings = Seq(
-  releaseCrossBuild := true,
-  releasePublishArtifactsAction := PgpKeys.publishSigned.value,
-  homepage := Some(url("https://github.com/sdu-cwc-extra/diffy")),
-  licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0")),
-  publishMavenStyle := true,
-  publishArtifact in Test := false,
-  pomIncludeRepository := { _ => false },
-  publishTo := {
-    val artifactory = "http://srv1075bh.sdu.nl:8081/artifactory/"
-    if (version.value.trim.endsWith("SNAPSHOT"))
-      Some("snapshots" at artifactory + "cwc-snapshots")
-    else
-      Some("releases" at artifactory + "cwc-releases")
-  },
-  scmInfo := Some(
-    ScmInfo(
-      url("https://github.com/sdu-cwc-extra/diffy"),
-      "scm:git@github.com:sdu-cwc-extra/diffy.git"
-    )
-  ),
-  pomExtra := (
-    <developers>
-      <developer>
-        <id>puneetkhanduri</id>
-        <name>Puneet Khanduri</name>
-        <url>https://twitter.com/pzdk</url>
-      </developer>
-      <developer>
-        <id>sdu-cwc-extra</id>
-        <name>SDU CWC Extra Team</name>
-        <url>https://github.com/sdu-cwc-extra</url>
-      </developer>
-    </developers>
-  )
-)
-
-lazy val sharedReleaseProcess = Seq(
-  releaseProcess := Seq[ReleaseStep](
-    checkSnapshotDependencies,
-    inquireVersions,
-    runClean,
-    runTest,
-    setReleaseVersion,
-    commitReleaseVersion,
-    tagRelease,
-    publishArtifacts,
-    setNextVersion,
-    commitNextVersion,
-    ReleaseStep(action = Command.process("sonatypeReleaseAll", _)),
-    pushChanges
-  )
-)
+publishTo := {
+  val artifactory = "http://srv1075bh.sdu.nl:8081/artifactory/"
+  if (version.value.trim.endsWith("SNAPSHOT"))
+    Some("snapshots" at artifactory + "cwc-snapshots")
+  else
+    Some("releases" at artifactory + "cwc-releases")
+}
