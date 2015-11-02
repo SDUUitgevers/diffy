@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.linux.LinuxSymlink
+
 enablePlugins(JavaServerAppPackaging)
 
 organization := "com.twitter"
@@ -20,6 +22,11 @@ mainClass in Compile := Some("com.twitter.diffy.Main")
 mappings in Universal <+= (packageBin in Compile, sourceDirectory ) map { (_, src) =>
   val conf = src / "main" / "resources" / "log4j.xml"
   conf -> "conf/log4j.xml"
+}
+
+// The same as linuxPackageMappings
+linuxPackageSymlinks := {
+  linuxPackageSymlinks.value :+ LinuxSymlink("/usr/share/diffy/differences.log", "/var/log/diffy/differences.log")
 }
 
 lazy val compilerOptions = Seq(
