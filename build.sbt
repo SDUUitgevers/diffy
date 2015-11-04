@@ -97,3 +97,5 @@ publishTo := {
   else
     Some("releases" at artifactory + "cwc-releases")
 }
+
+publish in Debian <<= (publish in Debian).triggeredBy(publish in Compile)
