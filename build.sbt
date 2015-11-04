@@ -1,8 +1,11 @@
 import com.typesafe.sbt.packager.linux.LinuxSymlink
+import com.typesafe.sbt.packager.SettingsHelper.makeDeploymentSettings
 
 enablePlugins(JavaServerAppPackaging)
 
-organization := "com.twitter"
+val sduTeam = settingKey[String]("Sdu team: betty|extra|cwc|local")
+sduTeam := sys.props.getOrElse("sduTeam", default = "local")
+organization := "nl.sdu." + sduTeam.value
 scalaVersion := "2.11.7"
 crossScalaVersions := Seq("2.10.5", "2.11.7")
 
@@ -11,6 +14,7 @@ name := "diffy"
 maintainer := "Sdu CWC Extra Team <sdu-cwc-extra@sdu.nl>"
 packageSummary := "Diffy Regression Test Tool"
 packageDescription := "Diffy Regression Test Tool"
+makeDeploymentSettings(Debian, packageBin in Debian, "deb")
 
 homepage := Some(url("https://github.com/sdu-cwc-extra/diffy"))
 licenses := Seq("Apache 2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
