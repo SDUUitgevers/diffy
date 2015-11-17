@@ -3,7 +3,7 @@ package com.twitter.diffy.proxy
 import javax.inject.Singleton
 import com.google.inject.Provides
 import com.twitter.diffy.analysis._
-import com.twitter.diffy.lifter.Message
+import com.twitter.diffy.lifter.{FieldMap, Message}
 import com.twitter.finagle._
 import com.twitter.inject.TwitterModule
 import com.twitter.logging.Logger
@@ -77,7 +77,15 @@ trait DifferenceProxy {
           }
         }
 
-      responses foreach {
+      responses.rescue {
+        case ex: Throwable =>
+          // Generic difference in case of (one or more services are down, etc)
+          Future.const(Try(Seq[Message](
+            Message(Some("200"), FieldMap(Map())),
+            Message(Some("404"), FieldMap(Map())),
+            Message(Some("200"), FieldMap(Map()))
+          )))
+      } foreach {
         case Seq(primaryResponse, candidateResponse, secondaryResponse) =>
           liftRequest(req) respond {
             case Return(m) =>
