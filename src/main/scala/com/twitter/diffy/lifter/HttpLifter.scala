@@ -1,13 +1,18 @@
 package com.twitter.diffy.lifter
 
+import java.math.BigInteger
+import java.security.MessageDigest
+
 import com.google.common.net.{HttpHeaders, MediaType}
 import com.twitter.io.Charsets
 import com.twitter.logging.Logger
 import com.twitter.util.{Try, Future}
+import org.jboss.netty.buffer.ChannelBuffer
 
 import org.jboss.netty.handler.codec.http.{HttpResponse, HttpRequest}
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ListBuffer
 
 object HttpLifter {
   val ControllerEndpointHeaderName = "X-Action-Name"
@@ -127,9 +132,24 @@ class HttpLifter(excludeHttpHeadersComparison: Boolean) {
             Message(controllerEndpoint, FieldMap(headersMap(r)))))
         }
 
+        /** Generic byte content type **/
         case (Some(mediaType), _) => {
-          log.debug(s"Content type: $mediaType is not supported")
-          contentTypeNotSupportedExceptionFuture(mediaType.toString)
+          def toBytes(buff: ChannelBuffer): Array[Byte] = {
+            val result = new ListBuffer[Byte]()
+            for (i <- 0 until buff.capacity) result.append(buff.readByte())
+            result.toArray
+          }
+          def md5sum(content: Array[Byte]): String = {
+            new BigInteger(1, MessageDigest.getInstance("MD5").digest(content)).toString(16)
+          }
+          Future.const(
+            Try {
+              val content = toBytes(r.getContent)
+              Message(controllerEndpoint, FieldMap(Map(
+                "File size" -> s"${content.length}_bytes",
+                "File md5sum" -> md5sum(content))))
+            }
+          )
         }
       }
     }
