@@ -25,7 +25,8 @@ object DifferenceProxyModule extends TwitterModule {
 }
 
 object DifferenceProxy {
-  val NoResponseException = Future.exception(new Exception("No responses provided by diffy"))
+  object NoResponseException extends Exception("No responses provided by diffy")
+  val NoResponseExceptionFuture = Future.exception(NoResponseException)
   val log = Logger(classOf[DifferenceProxy])
 }
 
@@ -97,7 +98,7 @@ trait DifferenceProxy {
           }
       }
 
-      NoResponseException
+      NoResponseExceptionFuture
     }
   }
 
