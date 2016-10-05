@@ -479,7 +479,7 @@ module.controller('FieldsController', function($scope, api, router, globalMetada
 
 module.controller('RequestsController', function($scope, api, router) {
   $scope.loading = false;
-  router('/ep/:endpoint/:path/:id?', function(req) {
+  router('/ep/:endpoint/:path?/:id?', function(req) {
     if ($scope.endpointName !== req.params.endpoint || $scope.path !== req.params.path) {
       $scope.path = req.params.path;
       $scope.endpointName = req.params.endpoint;

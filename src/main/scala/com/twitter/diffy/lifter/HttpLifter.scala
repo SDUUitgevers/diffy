@@ -1,13 +1,18 @@
 package com.twitter.diffy.lifter
 
+import java.math.BigInteger
+import java.security.MessageDigest
+
 import com.google.common.net.{HttpHeaders, MediaType}
 import com.twitter.io.Charsets
 import com.twitter.logging.Logger
 import com.twitter.util.{Try, Future}
+import org.jboss.netty.buffer.ChannelBuffer
 
 import org.jboss.netty.handler.codec.http.{HttpResponse, HttpRequest}
 
 import scala.collection.JavaConversions._
+import scala.collection.mutable.ListBuffer
 
 object HttpLifter {
   val ControllerEndpointHeaderName = "X-Action-Name"
@@ -85,21 +90,41 @@ class HttpLifter(excludeHttpHeadersComparison: Boolean) {
         /** When Content-Type is set as text/html, lift as Html **/
         case (Some(mediaType), _)
           if mediaType.is(MediaType.HTML_UTF_8) || mediaType.toString == "text/html" => {
-            val htmlContentTry = Try {
-              HtmlLifter.lift(HtmlLifter.decode(r.getContent.toString(Charsets.Utf8)))
-            }
-
-            Future.const(htmlContentTry map { htmlContent =>
-              val responseMap = Map(
-                r.getStatus.getCode.toString -> (Map(
-                  "content" -> htmlContent,
-                  "chunked" -> r.isChunked
-                ) ++ headersMap(r))
-              )
-
-              Message(controllerEndpoint, FieldMap(responseMap))
-            })
+          val htmlContentTry = Try {
+            HtmlLifter.lift(HtmlLifter.decode(r.getContent.toString(Charsets.Utf8)))
           }
+
+          Future.const(htmlContentTry map { htmlContent =>
+            val responseMap = Map(
+              r.getStatus.getCode.toString -> (Map(
+                "content" -> htmlContent,
+                "chunked" -> r.isChunked
+              ) ++ headersMap(r))
+            )
+
+            Message(controllerEndpoint, FieldMap(responseMap))
+          })
+        }
+
+        /** When Content-Type is set as application/xml, lift as Xml **/
+        case (Some(mediaType), _)
+          if mediaType.is(MediaType.XML_UTF_8) || mediaType.toString.contains("application/xml") => {
+          val xmlContentTry = Try {
+            XmlLifter.lift(XmlLifter.decode(r.getContent.toString(Charsets.Utf8)))
+          }
+
+          Future.const(xmlContentTry map { xmlContent =>
+            val responseMap = Map(
+              r.getStatus.getCode.toString -> (Map(
+                "content" -> xmlContent,
+                "chunked" -> r.isChunked
+              ))
+            )
+
+            Message(controllerEndpoint, FieldMap(responseMap))
+          })
+        }
+
 
         /** When content type is not set, only compare headers **/
         case (None, _) => {
@@ -107,9 +132,24 @@ class HttpLifter(excludeHttpHeadersComparison: Boolean) {
             Message(controllerEndpoint, FieldMap(headersMap(r)))))
         }
 
+        /** Generic byte content type **/
         case (Some(mediaType), _) => {
-          log.debug(s"Content type: $mediaType is not supported")
-          contentTypeNotSupportedExceptionFuture(mediaType.toString)
+          def toBytes(buff: ChannelBuffer): Array[Byte] = {
+            val result = new ListBuffer[Byte]()
+            for (i <- 0 until buff.capacity) result.append(buff.readByte())
+            result.toArray
+          }
+          def md5sum(content: Array[Byte]): String = {
+            new BigInteger(1, MessageDigest.getInstance("MD5").digest(content)).toString(16)
+          }
+          Future.const(
+            Try {
+              val content = toBytes(r.getContent)
+              Message(controllerEndpoint, FieldMap(Map(
+                "File size" -> s"${content.length}_bytes",
+                "File md5sum" -> md5sum(content))))
+            }
+          )
         }
       }
     }

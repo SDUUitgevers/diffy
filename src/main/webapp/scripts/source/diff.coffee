@@ -304,7 +304,7 @@ module.controller 'FieldsController', ($scope, api, router, globalMetadata, glob
 module.controller 'RequestsController', ($scope, api, router) ->
   $scope.loading = false
 
-  router '/ep/:endpoint/:path/:id?', (req) ->
+  router '/ep/:endpoint/:path?/:id?', (req) ->
     if $scope.endpointName != req.params.endpoint || $scope.path != req.params.path
       $scope.path = req.params.path
       $scope.endpointName = req.params.endpoint
