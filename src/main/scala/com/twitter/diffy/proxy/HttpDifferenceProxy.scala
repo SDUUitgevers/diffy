@@ -6,7 +6,7 @@ import com.twitter.diffy.analysis.{DifferenceAnalyzer, JoinedDifferences, InMemo
 import com.twitter.diffy.lifter.{HttpLifter, Message}
 import com.twitter.finagle.{Http, Filter}
 import com.twitter.finagle.http.{Method, Request}
-import com.twitter.util.{Try, Future}
+import com.twitter.util.{StorageUnit, Try, Future}
 import org.jboss.netty.handler.codec.http.{HttpResponse, HttpRequest}
 
 trait HttpDifferenceProxy extends DifferenceProxy {
@@ -18,7 +18,7 @@ trait HttpDifferenceProxy extends DifferenceProxy {
   override type Srv = HttpService
 
   override def serviceFactory(serverset: String, label: String) =
-    HttpService(Http.newClient(serverset, label).toService)
+    HttpService(Http.client.withMaxResponseSize(StorageUnit.parse("50.megabytes")).newClient(serverset, label).toService)
 
   override lazy val server = Http.serve(servicePort, proxy)
 
