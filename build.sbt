@@ -1,7 +1,9 @@
 import com.typesafe.sbt.packager.linux.LinuxSymlink
 import com.typesafe.sbt.packager.SettingsHelper.makeDeploymentSettings
 
-enablePlugins(JavaServerAppPackaging)
+lazy val root = (project in file("."))
+  .enablePlugins(JavaServerAppPackaging)
+  .enablePlugins(SystemVPlugin)
 
 val sduTeam = settingKey[String]("Sdu team: betty|extra|cwc|local")
 sduTeam := sys.props.getOrElse("sduTeam", default = "local")
