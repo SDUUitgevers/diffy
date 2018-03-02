@@ -36,4 +36,16 @@ class Frontend @Inject()(settings: Settings) extends Controller {
   get("/scripts/:*") { request: Request =>
     response.ok.file(request.path)
   }
+
+  get("/fonts/:*") { request: Request =>
+    response.ok.file(request.path)
+  }
+
+  get("/less/:*") { request: Request =>
+    response.ok.file(request.path)
+  }
+
+  get("/scss/:*") { request: Request =>
+    response.ok.file(request.path)
+  }
 }
