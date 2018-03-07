@@ -47,14 +47,15 @@ class HttpLifter(excludeHttpHeadersComparison: Boolean) {
 
   def liftRequest(req: HttpRequest): Future[Message] = {
     val canonicalResource = Option(req.headers.get("Canonical-Resource"))
-    Future.value(Message(canonicalResource, FieldMap(Map("request"-> req.toString))))
+    val body = req.getContent.copy.toString(Charsets.Utf8)
+    Future.value(Message(canonicalResource, FieldMap(Map("request"-> req.toString, "body" -> body))))
   }
 
   def liftResponse(resp: Try[HttpResponse]): Future[Message] = {
     Future.const(resp) flatMap { r: HttpResponse =>
       val mediaTypeOpt: Option[MediaType] =
         Option(r.headers.get(HttpHeaders.CONTENT_TYPE)) map { MediaType.parse }
-
+      
       val contentLengthOpt = Option(r.headers.get(HttpHeaders.CONTENT_LENGTH))
 
       /** header supplied by macaw, indicating the controller reached **/
@@ -70,7 +71,7 @@ class HttpLifter(excludeHttpHeadersComparison: Boolean) {
         /** When Content-Type is set as application/json, lift as Json **/
         case (Some(mediaType), _) if mediaType.is(MediaType.JSON_UTF_8) || mediaType.toString == "application/json" => {
           val jsonContentTry = Try {
-            JsonLifter.decode(r.getContent.toString(Charsets.Utf8))
+            JsonLifter.decode(r.getContent.copy.toString(Charsets.Utf8))
           }
 
           Future.const(jsonContentTry map { jsonContent =>
@@ -90,9 +91,9 @@ class HttpLifter(excludeHttpHeadersComparison: Boolean) {
         /** When Content-Type is set as text/html, lift as Html **/
         case (Some(mediaType), _)
           if mediaType.is(MediaType.HTML_UTF_8) || mediaType.toString == "text/html" => {
-          val htmlContentTry = Try {
-            HtmlLifter.lift(HtmlLifter.decode(r.getContent.toString(Charsets.Utf8)))
-          }
+            val htmlContentTry = Try {
+              HtmlLifter.lift(HtmlLifter.decode(r.getContent.copy.toString(Charsets.Utf8)))
+            }
 
           Future.const(htmlContentTry map { htmlContent =>
             val responseMap = Map(

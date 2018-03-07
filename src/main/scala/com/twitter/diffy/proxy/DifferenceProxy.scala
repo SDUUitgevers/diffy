@@ -21,11 +21,13 @@ object DifferenceProxyModule extends TwitterModule {
     settings.protocol match {
       case "thrift" => ThriftDifferenceProxy(settings, collector, joinedDifferences, analyzer)
       case "http" => SimpleHttpDifferenceProxy(settings, collector, joinedDifferences, analyzer)
+      case "https" => SimpleHttpsDifferenceProxy(settings, collector, joinedDifferences, analyzer)
     }
 }
 
 object DifferenceProxy {
-  val NoResponseException = Future.exception(new Exception("No responses provided by diffy"))
+  object NoResponseException extends Exception("No responses provided by diffy")
+  val NoResponseExceptionFuture = Future.exception(NoResponseException)
   val log = Logger(classOf[DifferenceProxy])
 }
 
@@ -97,7 +99,7 @@ trait DifferenceProxy {
           }
       }
 
-      NoResponseException
+      NoResponseExceptionFuture
     }
   }
 
