@@ -6,8 +6,8 @@ import com.twitter.diffy.analysis._
 import com.twitter.diffy.lifter.{FieldMap, Message}
 import com.twitter.finagle._
 import com.twitter.inject.TwitterModule
-import com.twitter.logging.Logger
 import com.twitter.util._
+import org.apache.log4j
 
 object DifferenceProxyModule extends TwitterModule {
   @Provides
@@ -28,7 +28,7 @@ object DifferenceProxyModule extends TwitterModule {
 object DifferenceProxy {
   object NoResponseException extends Exception("No responses provided by diffy")
   val NoResponseExceptionFuture = Future.exception(NoResponseException)
-  val log = Logger(classOf[DifferenceProxy])
+  val log = log4j.Logger.getLogger(classOf[DifferenceProxy])
 }
 
 trait DifferenceProxy {
@@ -63,19 +63,22 @@ trait DifferenceProxy {
 
   def proxy = new Service[Req, Rep] {
     override def apply(req: Req): Future[Rep] = {
+
+      log.info(s"Proxy request: $req")
+
       val rawResponses =
         multicastHandler(req) respond {
-          case Return(_) => log.debug("success networking")
-          case Throw(t) => log.debug(t, "error networking")
+          case Return(_) => log.info("success networking")
+          case Throw(t) => log.error("error networking", t)
         }
 
       val responses: Future[Seq[Message]] =
         rawResponses flatMap { reps =>
           Future.collect(reps map liftResponse) respond {
             case Return(rs) =>
-              log.debug(s"success lifting ${rs.head.endpoint}")
+              log.info(s"success lifting ${rs.head.endpoint}")
 
-            case Throw(t) => log.debug(t, "error lifting")
+            case Throw(t) => log.error(s"error lifting req: $req", t)
           }
         }
 
@@ -91,9 +94,9 @@ trait DifferenceProxy {
         case Seq(primaryResponse, candidateResponse, secondaryResponse) =>
           liftRequest(req) respond {
             case Return(m) =>
-              log.debug(s"success lifting request for ${m.endpoint}")
+              log.info(s"success lifting request for ${m.endpoint}")
 
-            case Throw(t) => log.debug(t, "error lifting request")
+            case Throw(t) => log.error("error lifting request", t)
           } foreach { req =>
             analyzer(req, candidateResponse, primaryResponse, secondaryResponse)
           }
