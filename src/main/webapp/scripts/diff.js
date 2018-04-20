@@ -164,6 +164,7 @@ module.factory('globalMetadata', function() {
 module.controller('EndpointController', function($scope, $interval, api, router, info, globalMetadata, globalFields, endpointInclusions, percentageRating) {
   var metadata, sortEndpoints;
   $scope.globalExclusion = false;
+  $scope.globalPause = false;
   $scope.endpoints = {};
   $scope.sortedEndpoints = [];
   $scope.metadata = new Metadata();
@@ -236,7 +237,15 @@ module.controller('EndpointController', function($scope, $interval, api, router,
     }
     return $scope.$root.$emit('toggle_global_exclusion', endpoints, $scope.globalExclusion);
   };
-  $scope.apiInterval = $interval($scope.loadEndpoints, 2000);
+  $scope.togglePause = function() {
+    if ($scope.globalPause) {
+      $interval.cancel($scope.apiInterval);
+    } else {
+      $scope.apiInterval = $interval($scope.loadEndpoints, 2000);
+    }
+    return $scope.$root.$emit('toggle_global_pause', $scope.globalPause);
+  };
+  $scope.togglePause();
   return $scope.loadEndpoints();
 });
 

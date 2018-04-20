@@ -82,6 +82,7 @@ module.factory 'globalMetadata', -> new Metadata()
 
 module.controller 'EndpointController', ($scope, $interval, api, router, info, globalMetadata, globalFields, endpointInclusions, percentageRating) ->
   $scope.globalExclusion = false
+  $scope.globalPause = false
   $scope.endpoints = {}
   $scope.sortedEndpoints = []
   $scope.metadata = new Metadata()
@@ -137,7 +138,13 @@ module.controller 'EndpointController', ($scope, $interval, api, router, info, g
 
     $scope.$root.$emit 'toggle_global_exclusion', endpoints, $scope.globalExclusion
 
-  $scope.apiInterval = $interval $scope.loadEndpoints, 2000
+  $scope.togglePause = ->
+    if ($scope.globalPause) then $interval.cancel($scope.apiInterval)
+    else $scope.apiInterval = $interval $scope.loadEndpoints, 2000
+
+    $scope.$root.$emit 'toggle_global_pause', $scope.globalPause
+
+  $scope.togglePause()
   $scope.loadEndpoints()
 
 
