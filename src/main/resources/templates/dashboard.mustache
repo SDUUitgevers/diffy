@@ -172,6 +172,16 @@
           </div>
         </div>
 
+
+        <div class="row">
+          <div class="checkbox-iphone">
+            <label>
+              <input type="checkbox" ng-model="globalPause" ng-change="togglePause()">
+              <span>Pause</span>
+            </label>
+          </div>
+        </div>
+
         <div id="endpoints-container">
           <a class="row mono endpoint"
             ng-init="meta=metadata.get(endpoint.name);"
