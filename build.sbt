@@ -4,6 +4,9 @@ import com.typesafe.sbt.packager.SettingsHelper.makeDeploymentSettings
 lazy val root = (project in file("."))
   .enablePlugins(JavaServerAppPackaging)
   .enablePlugins(SystemVPlugin)
+  .enablePlugins(DebianPlugin)
+  .enablePlugins(JDebPackaging)
+  .enablePlugins(DockerPlugin)
 
 val sduTeam = settingKey[String]("Sdu team: betty|extra|cwc|local")
 sduTeam := sys.props.getOrElse("sduTeam", default = "local")
@@ -97,7 +100,7 @@ excludeFilter in unmanagedResources := HiddenFileFilter || "BUILD"
 unmanagedResourceDirectories in Compile += baseDirectory.value / "src" / "main" / "webapp"
 
 publishTo := {
-  val artifactory = "http://srv1075bh.sdu.nl:8081/artifactory/"
+  val artifactory = "https://artifactory.k8s.awssdu.nl/artifactory/"
   if (version.value.trim.endsWith("SNAPSHOT"))
     Some("snapshots" at artifactory + "cwc-snapshots")
   else
@@ -105,3 +108,10 @@ publishTo := {
 }
 
 publish in Debian <<= (publish in Debian).triggeredBy(publish in Compile)
+
+// Docker
+dockerBaseImage := "openjdk:8"
+dockerExposedPorts := Seq(8888)
+dockerEntrypoint := Seq("bin/diffy")
+dockerRepository := Some("117533191630.dkr.ecr.eu-west-1.amazonaws.com")
+dockerUsername := Some("cwc")
